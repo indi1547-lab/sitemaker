@@ -16,6 +16,7 @@ const editorGroups = [
   {
     title: "Первый экран",
     fields: [
+      ["heroMainImage", "Фото главного блока", "url"],
       ["heroEyebrow", "Надзаголовок"],
       ["heroTitle", "Главный заголовок"],
       ["heroText", "Описание"],
@@ -58,14 +59,17 @@ const editorGroups = [
   {
     title: "Проекты",
     fields: [
+      ["project1Image", "Проект 1: фото", "url"],
       ["projectsEyebrow", "Проекты: надзаголовок"],
       ["projectsTitle", "Проекты: заголовок"],
       ["project1Label", "Проект 1: метка"],
       ["project1Title", "Проект 1: заголовок"],
       ["project1Text", "Проект 1: текст"],
+      ["project2Image", "Проект 2: фото", "url"],
       ["project2Label", "Проект 2: метка"],
       ["project2Title", "Проект 2: заголовок"],
       ["project2Text", "Проект 2: текст"],
+      ["project3Image", "Проект 3: фото", "url"],
       ["project3Label", "Проект 3: метка"],
       ["project3Title", "Проект 3: заголовок"],
       ["project3Text", "Проект 3: текст"]
@@ -95,11 +99,15 @@ const editableNodes = [...document.querySelectorAll("[data-edit-key]")];
 const form = document.querySelector(".site-editor__form");
 const toggleButton = document.querySelector(".editor-toggle");
 const editor = document.querySelector(".site-editor");
+const backdrop = document.querySelector(".editor-backdrop");
 const closeButton = document.querySelector(".site-editor__close");
 const saveButton = document.querySelector(".site-editor__save");
 const resetButton = document.querySelector(".site-editor__reset");
 const exportButton = document.querySelector(".site-editor__export");
 const importInput = document.querySelector(".site-editor__file");
+const sectionsNav = document.querySelector(".site-editor__sections");
+const statusNode = document.querySelector(".site-editor__status");
+const imageNodes = [...document.querySelectorAll("[data-edit-image-key]")];
 
 const defaults = editableNodes.reduce((acc, node) => {
   const key = node.dataset.editKey;
@@ -116,6 +124,12 @@ const defaults = editableNodes.reduce((acc, node) => {
   return acc;
 }, {});
 
+imageNodes.forEach((node) => {
+  const key = node.dataset.editImageKey;
+  const styleValue = getComputedStyle(node).getPropertyValue("--card-image").trim();
+  defaults[key] = styleValue.replace(/^url\(["']?/, "").replace(/["']?\)$/, "");
+});
+
 function getStoredContent() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
@@ -126,16 +140,27 @@ function getStoredContent() {
 
 function buildEditor() {
   form.innerHTML = "";
+  sectionsNav.innerHTML = "";
 
   editorGroups.forEach((group) => {
     const section = document.createElement("section");
     section.className = "site-editor__group";
+    section.id = `editor-group-${group.title.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-")}`;
 
     const title = document.createElement("h3");
     title.textContent = group.title;
     section.appendChild(title);
 
-    group.fields.forEach(([key, label]) => {
+    const navButton = document.createElement("button");
+    navButton.type = "button";
+    navButton.className = "site-editor__chip";
+    navButton.textContent = group.title;
+    navButton.addEventListener("click", () => {
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    sectionsNav.appendChild(navButton);
+
+    group.fields.forEach(([key, label, type]) => {
       const wrapper = document.createElement("label");
       wrapper.className = "site-editor__field";
 
@@ -143,11 +168,17 @@ function buildEditor() {
       text.textContent = label;
       wrapper.appendChild(text);
 
-      const input = key === "heroText" || key === "metaDescription" || key.endsWith("Text") || key.endsWith("Title")
+      const input = type === "url"
+        ? document.createElement("input")
+        : key === "heroText" || key === "metaDescription" || key.endsWith("Text") || key.endsWith("Title")
         ? document.createElement("textarea")
         : document.createElement("input");
 
       input.name = key;
+      input.placeholder = type === "url" ? "https://..." : "";
+      if (type === "url") {
+        input.type = "url";
+      }
       input.value = defaults[key] || "";
       wrapper.appendChild(input);
       section.appendChild(wrapper);
@@ -195,6 +226,14 @@ function applyContent(content) {
       .toUpperCase();
     brandMark.textContent = letters || "DL";
   }
+
+  imageNodes.forEach((node) => {
+    const key = node.dataset.editImageKey;
+    const value = content[key] ?? defaults[key] ?? "";
+    if (value) {
+      node.style.setProperty("--card-image", `url("${value}")`);
+    }
+  });
 }
 
 function getFormContent() {
@@ -213,9 +252,15 @@ function syncForm(content) {
 
 function setEditorState(isOpen) {
   editor.classList.toggle("is-open", isOpen);
+  backdrop.hidden = !isOpen;
+  backdrop.classList.toggle("is-visible", isOpen);
   toggleButton.setAttribute("aria-expanded", String(isOpen));
   editor.setAttribute("aria-hidden", String(!isOpen));
   document.body.classList.toggle("editor-open", isOpen);
+}
+
+function setStatus(message) {
+  statusNode.textContent = message;
 }
 
 buildEditor();
@@ -231,16 +276,27 @@ closeButton.addEventListener("click", () => {
   setEditorState(false);
 });
 
+backdrop.addEventListener("click", () => {
+  setEditorState(false);
+});
+
+form.addEventListener("input", () => {
+  applyContent({ ...defaults, ...getFormContent() });
+  setStatus("Предпросмотр обновлен. Нажми \"Сохранить\", чтобы оставить изменения в этом браузере.");
+});
+
 saveButton.addEventListener("click", () => {
   const nextContent = getFormContent();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(nextContent));
   applyContent({ ...defaults, ...nextContent });
+  setStatus("Сохранено в браузере. Эти изменения останутся на этом устройстве.");
 });
 
 resetButton.addEventListener("click", () => {
   localStorage.removeItem(STORAGE_KEY);
   syncForm(defaults);
   applyContent(defaults);
+  setStatus("Все изменения сброшены к исходной версии сайта.");
 });
 
 exportButton.addEventListener("click", () => {
@@ -251,6 +307,7 @@ exportButton.addEventListener("click", () => {
   link.download = "site-content.json";
   link.click();
   URL.revokeObjectURL(url);
+  setStatus("Настройки скачаны файлом JSON.");
 });
 
 importInput.addEventListener("change", async (event) => {
@@ -265,6 +322,7 @@ importInput.addEventListener("change", async (event) => {
     syncForm({ ...defaults, ...content });
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...defaults, ...content }));
     applyContent({ ...defaults, ...content });
+    setStatus("Настройки загружены из файла и применены к сайту.");
   } catch {
     window.alert("Не удалось загрузить настройки. Проверь JSON-файл.");
   } finally {

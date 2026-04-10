@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div class="editor-backdrop" hidden></div>
   <button class="editor-toggle" type="button" aria-expanded="false" aria-controls="site-editor">
     Редактировать сайт
   </button>
@@ -60,7 +61,7 @@
         </section>
 
         <aside class="hero-panel">
-          <div class="hero-card hero-card-main">
+          <div class="hero-card hero-card-main" data-edit-image-key="heroMainImage">
             <span class="hero-card-label" data-edit-key="heroMainCardLabel">Старт строительства</span>
             <strong data-edit-key="heroMainCardValue">от 45 дней</strong>
             <p data-edit-key="heroMainCardText">После утверждения проекта и подготовки участка.</p>
@@ -127,21 +128,21 @@
         </div>
 
         <div class="project-grid">
-          <article class="project-card project-forest">
+          <article class="project-card project-forest" data-edit-image-key="project1Image">
             <div class="project-copy">
               <span data-edit-key="project1Label">Forest 140</span>
               <h3 data-edit-key="project1Title">Одноэтажный дом с террасой</h3>
               <p data-edit-key="project1Text">3 спальни, кухня-гостиная, панорамные окна, навес для авто.</p>
             </div>
           </article>
-          <article class="project-card project-city">
+          <article class="project-card project-city" data-edit-image-key="project2Image">
             <div class="project-copy">
               <span data-edit-key="project2Label">City Brick 210</span>
               <h3 data-edit-key="project2Title">Семейный двухэтажный дом</h3>
               <p data-edit-key="project2Text">4 спальни, кабинет, мастер-блок, просторная гостиная и котельная.</p>
             </div>
           </article>
-          <article class="project-card project-air">
+          <article class="project-card project-air" data-edit-image-key="project3Image">
             <div class="project-copy">
               <span data-edit-key="project3Label">Air Loft 175</span>
               <h3 data-edit-key="project3Title">Современный дом в стиле минимализм</h3>
@@ -209,13 +210,15 @@
       <div>
         <p class="site-editor__eyebrow">Конструктор</p>
         <h2>Редактирование сайта</h2>
+        <p class="site-editor__subhead">Тексты и фото обновляются сразу на странице.</p>
       </div>
       <button class="site-editor__close" type="button" aria-label="Закрыть редактор">×</button>
     </div>
 
-    <p class="site-editor__hint">
-      Меняй поля, нажимай "Сохранить" и сразу смотри результат на странице.
-    </p>
+    <div class="site-editor__toolbar">
+      <div class="site-editor__sections"></div>
+      <p class="site-editor__status" aria-live="polite">Изменения можно сохранить в браузере или скачать файлом.</p>
+    </div>
 
     <form class="site-editor__form"></form>
 
